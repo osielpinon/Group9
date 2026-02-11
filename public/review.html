@@ -1,0 +1,80 @@
+
+<!--Page for feedback to be reviewed-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Feedback Review</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f2f2f2;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .feedback-item {
+      background: white;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .reply {
+      margin-top: 10px;
+      padding: 10px;
+      background: #eef5ff;
+      border-left: 4px solid #007bff;
+    }
+  </style>
+</head>
+<body>
+  <h1>Feedback & Responses</h1>
+  <p>You can view manager responses to anonymous feedback here.</p>
+    <p>Have further questions? Submit additional feedback for review.</p>
+
+  <div id="feedback-container">Loading...</div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const container = document.getElementById("feedback-container");
+
+      fetch("/api/feedback")
+        .then(res => res.json())
+        .then(data => {
+          container.innerHTML = "";
+
+          if (!data.length) {
+            container.innerHTML = "<p>No feedback available.</p>";
+            return;
+          }
+
+          data.forEach(item => {
+            const div = document.createElement("div");
+            div.className = "feedback-item";
+
+            div.innerHTML = `
+              <p><strong>Feedback:</strong> ${item.feedback}</p>
+              ${
+                item.reply
+                  ? `<div class="reply"><strong>Response:</strong> ${item.reply}</div>`
+                  : `<em>No response yet</em>`
+              }
+            `;
+
+            container.appendChild(div);
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          container.innerHTML = "<p>Error loading feedback.</p>";
+        });
+    });
+  </script>
+</body>
+</html>

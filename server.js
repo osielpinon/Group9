@@ -1,37 +1,60 @@
-
-//Create express variable, set up the server, etc:
 const express = require("express");
 const app = express();
-const port =3000;
+const port = 3000;
 
-//To allow Express to read the form data:
+// Allow Express to read form data
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json()); // needed for JSON requests
 
-//To store feedback in memory in the form of an array:
+// Serve static files
+app.use(express.static(__dirname + "/public"));
+
+// In-memory feedback storage
 let feedbackList = [];
 
-//Serve the HTML page:
+// Home page: user feedback submission
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
 });
 
-// Handle feedback submission to read page, store, and show confirmation message:
 app.post("/submit", (req, res) => {
   const feedback = req.body.feedback;
-  feedbackList.push(feedback);
-
+  if (feedback) {
+    // Store feedback as an object with empty reply
+    feedbackList.push({ feedback: feedback, reply: "" });
+  }
   res.sendFile(__dirname + "/public/confirmation.html");
 });
 
-
-
-
-// Admin view: see the feedback anonymously
+// Admin page: view & submit feedback
 app.get("/admin", (req, res) => {
-  res.send(feedbackList.join("<br>"));
+  res.sendFile(__dirname + "/public/admin.html");
 });
 
-//Server work to list on our port
+// API route: manager fetches all feedback
+app.get("/api/feedback", (req, res) => {
+  // Send feedback as JSON array of objects
+  res.json(feedbackList);
+});
+
+// API route: manager or admin posts a reply
+app.post("/api/feedback/:index/reply", (req, res) => {
+  const index = parseInt(req.params.index);
+  const reply = req.body.reply;
+
+  if (!feedbackList[index]) return res.status(404).send("Feedback not found");
+
+  // Update the reply
+  feedbackList[index].reply = reply;
+  res.send("Reply saved");
+});
+
+app.get("/review", (req, res) => {
+  res.sendFile(__dirname + "/public/review.html");
+});
+
+
+// Start server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
