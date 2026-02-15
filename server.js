@@ -1,60 +1,69 @@
+// Create express variable, set up the server, etc:
 const express = require("express");
 const app = express();
 const port = 3000;
 
-// Allow Express to read form data
+// Allow Express to read form data:
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json()); // needed for JSON requests
 
-// Serve static files
-app.use(express.static(__dirname + "/public"));
-
-// In-memory feedback storage
+// Store feedback in memory as objects
 let feedbackList = [];
+let currentId = 1;
 
-// Home page: user feedback submission
+// Serve the HTML page:
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
 });
 
+// Handle feedback submission
 app.post("/submit", (req, res) => {
-  const feedback = req.body.feedback;
-  if (feedback) {
-    // Store feedback as an object with empty reply
-    feedbackList.push({ feedback: feedback, reply: "" });
+  const feedbackText = req.body.feedback;
+
+  const newFeedback = {
+    id: currentId++,
+    message: feedbackText,
+    status: "Received"
+  };
+
+  feedbackList.push(newFeedback);
+
+  // Send confirmation page with ID and status
+  res.send(`
+    <h2>Thank you for your feedback!</h2>
+    <p><strong>Your Feedback ID:</strong> ${newFeedback.id}</p>
+    <p><strong>Status:</strong> ${newFeedback.status}</p>
+    <a href="/">Go Back</a>
+  `);
+});
+
+// Check status route
+app.get("/status/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+
+  const feedback = feedbackList.find(f => f.id === id);
+
+  if (!feedback) {
+    return res.send("<h3>Feedback not found.</h3>");
   }
-  res.sendFile(__dirname + "/public/confirmation.html");
+
+  res.send(`
+    <h2>Feedback Status</h2>
+    <p><strong>ID:</strong> ${feedback.id}</p>
+    <p><strong>Status:</strong> ${feedback.status}</p>
+    <a href="/">Go Back</a>
+  `);
 });
 
-// Admin page: view & submit feedback
+// Admin view: see feedback anonymously
 app.get("/admin", (req, res) => {
-  res.sendFile(__dirname + "/public/admin.html");
+  const formatted = feedbackList
+    .map(f => `ID: ${f.id} | ${f.message} | Status: ${f.status}`)
+    .join("<br>");
+
+  res.send(formatted || "No feedback submitted yet.");
 });
 
-// API route: manager fetches all feedback
-app.get("/api/feedback", (req, res) => {
-  // Send feedback as JSON array of objects
-  res.json(feedbackList);
-});
-
-// API route: manager or admin posts a reply
-app.post("/api/feedback/:index/reply", (req, res) => {
-  const index = parseInt(req.params.index);
-  const reply = req.body.reply;
-
-  if (!feedbackList[index]) return res.status(404).send("Feedback not found");
-
-  // Update the reply
-  feedbackList[index].reply = reply;
-  res.send("Reply saved");
-});
-
-app.get("/review", (req, res) => {
-  res.sendFile(__dirname + "/public/review.html");
-});
-
-
-// Start server
+// Server listen
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
